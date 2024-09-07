@@ -19,8 +19,12 @@ pub fn alloc_texture(
 
         result = alloc(layout); 
 
-        println!("Allocated {} bytes", layout.size());
+        println!("Allocated {} bytes at {}", layout.size(), result as u64);
+
+        (result as *mut f32).add(width * height - 1).write(std::f32::consts::PI);
     }
+
+    println!("Returning pointer {}", result as u64);
 
     return result as u64;
 }

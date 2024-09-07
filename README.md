@@ -9,6 +9,8 @@ Then navigate to the "example" directory, and run:
 
 ```cargo swift package -n ExamplePackage -p ios```
 
+On any change in Rust lib code, re-run the command above (or use script build phase). 
+
 This will generate the missing ```.xcframework```
 
 After this, build and run the iOS project.
