@@ -1,13 +1,6 @@
 
-// Keep this namespace, even when empty - otherwise binding generation will throw an error!
 namespace example { 
-	// You can safely delete this example top-level function definition
-	u64 add(u64 a, u64 b); };
-
-// You can safely delete this example data structure definition
-dictionary Example {
-	sequence<string> items;
-	double? value;
+	u64 alloc_texture(u64 width, u64 height, u64 page_size);
 };
 
 // You can safely delete this example interface definition

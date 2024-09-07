@@ -8,6 +8,12 @@
 #ifndef create_metal_buffer_h
 #define create_metal_buffer_h
 
-#include <stdio.h>
+#include <inttypes.h>
+
+float * make_buffer(
+                    uint64_t width,
+                    uint64_t height,
+                    uint64_t page_size
+                    );
 
 #endif /* create_metal_buffer_h */

@@ -10,7 +10,11 @@ import ExamplePackage
 
 @main
 struct SwiftRustUeffiExampleApp: App {
+    let buffer = make_buffer(8192, 8192, 4096);
+
     var body: some Scene {
+        print(buffer?.advanced(by: 8192*8192-1).pointee)
+
         return WindowGroup {
             ContentView()
         }

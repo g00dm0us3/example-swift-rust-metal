@@ -1,16 +1,28 @@
 uniffi::include_scaffolding!("lib");
 
+use std::alloc::{alloc, Layout};
+use std::mem::size_of;
 
-// Bindings have to be exposed in a .udl file with the same name as the corresponding .rs file, i.e. lib.udl
-// You can expose top-level functions...
-pub fn add(a: u64, b: u64) -> u64 {
-    a + b
-}
+pub fn alloc_texture(
+    width: u64,
+    height: u64,
+    page_size: u64
+) -> u64 {
+    let result: *mut u8;
 
-// ... data structs without methods ...
-pub struct Example {
-    pub items: Vec<String>,
-    pub value: Option<f64>,
+    let width = width as usize;
+    let height = height as usize;
+    let page_size = page_size as usize;
+
+    unsafe {
+        let layout = Layout::from_size_align(width * height * size_of::<f32>(), page_size).expect("Layout");
+
+        result = alloc(layout); 
+
+        println!("Allocated {} bytes", layout.size());
+    }
+
+    return result as u64;
 }
 
 // ... classes with methods ...

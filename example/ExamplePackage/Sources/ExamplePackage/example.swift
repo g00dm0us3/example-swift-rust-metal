@@ -397,19 +397,6 @@ fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
     }
 }
 
-fileprivate struct FfiConverterDouble: FfiConverterPrimitive {
-    typealias FfiType = Double
-    typealias SwiftType = Double
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Double {
-        return try lift(readDouble(&buf))
-    }
-
-    public static func write(_ value: Double, into buf: inout [UInt8]) {
-        writeDouble(&buf, lower(value))
-    }
-}
-
 fileprivate struct FfiConverterString: FfiConverter {
     typealias SwiftType = String
     typealias FfiType = RustBuffer
@@ -557,111 +544,12 @@ public func FfiConverterTypeGreeter_lift(_ pointer: UnsafeMutableRawPointer) thr
 public func FfiConverterTypeGreeter_lower(_ value: Greeter) -> UnsafeMutableRawPointer {
     return FfiConverterTypeGreeter.lower(value)
 }
-
-
-public struct Example {
-    public var items: [String]
-    public var value: Double?
-
-    // Default memberwise initializers are never public by default, so we
-    // declare one manually.
-    public init(items: [String], value: Double?) {
-        self.items = items
-        self.value = value
-    }
-}
-
-
-
-extension Example: Equatable, Hashable {
-    public static func ==(lhs: Example, rhs: Example) -> Bool {
-        if lhs.items != rhs.items {
-            return false
-        }
-        if lhs.value != rhs.value {
-            return false
-        }
-        return true
-    }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(items)
-        hasher.combine(value)
-    }
-}
-
-
-public struct FfiConverterTypeExample: FfiConverterRustBuffer {
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Example {
-        return
-            try Example(
-                items: FfiConverterSequenceString.read(from: &buf), 
-                value: FfiConverterOptionDouble.read(from: &buf)
-        )
-    }
-
-    public static func write(_ value: Example, into buf: inout [UInt8]) {
-        FfiConverterSequenceString.write(value.items, into: &buf)
-        FfiConverterOptionDouble.write(value.value, into: &buf)
-    }
-}
-
-
-public func FfiConverterTypeExample_lift(_ buf: RustBuffer) throws -> Example {
-    return try FfiConverterTypeExample.lift(buf)
-}
-
-public func FfiConverterTypeExample_lower(_ value: Example) -> RustBuffer {
-    return FfiConverterTypeExample.lower(value)
-}
-
-fileprivate struct FfiConverterOptionDouble: FfiConverterRustBuffer {
-    typealias SwiftType = Double?
-
-    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
-        guard let value = value else {
-            writeInt(&buf, Int8(0))
-            return
-        }
-        writeInt(&buf, Int8(1))
-        FfiConverterDouble.write(value, into: &buf)
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SwiftType {
-        switch try readInt(&buf) as Int8 {
-        case 0: return nil
-        case 1: return try FfiConverterDouble.read(from: &buf)
-        default: throw UniffiInternalError.unexpectedOptionalTag
-        }
-    }
-}
-
-fileprivate struct FfiConverterSequenceString: FfiConverterRustBuffer {
-    typealias SwiftType = [String]
-
-    public static func write(_ value: [String], into buf: inout [UInt8]) {
-        let len = Int32(value.count)
-        writeInt(&buf, len)
-        for item in value {
-            FfiConverterString.write(item, into: &buf)
-        }
-    }
-
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> [String] {
-        let len: Int32 = try readInt(&buf)
-        var seq = [String]()
-        seq.reserveCapacity(Int(len))
-        for _ in 0 ..< len {
-            seq.append(try FfiConverterString.read(from: &buf))
-        }
-        return seq
-    }
-}
-public func add(a: UInt64, b: UInt64) -> UInt64 {
+public func allocTexture(width: UInt64, height: UInt64, pageSize: UInt64) -> UInt64 {
     return try!  FfiConverterUInt64.lift(try! rustCall() {
-    uniffi_example_fn_func_add(
-        FfiConverterUInt64.lower(a),
-        FfiConverterUInt64.lower(b),$0
+    uniffi_example_fn_func_alloc_texture(
+        FfiConverterUInt64.lower(width),
+        FfiConverterUInt64.lower(height),
+        FfiConverterUInt64.lower(pageSize),$0
     )
 })
 }
@@ -681,7 +569,7 @@ private var initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_example_checksum_func_add() != 28481) {
+    if (uniffi_example_checksum_func_alloc_texture() != 25643) {
         return InitializationResult.apiChecksumMismatch
     }
     if (uniffi_example_checksum_method_greeter_greet() != 52555) {

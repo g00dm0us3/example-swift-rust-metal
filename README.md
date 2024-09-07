@@ -7,7 +7,7 @@ To build install cargo-swift:
 
 Then navigate to the "example" directory, and run:
 
-```cargo swift package```
+```cargo swift package -n ExamplePackage -p ios```
 
 This will generate the missing ```.xcframework```
 

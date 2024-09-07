@@ -12,6 +12,8 @@
 		E520A1E22C8C67BA00CEA1A9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E520A1E12C8C67BA00CEA1A9 /* Assets.xcassets */; };
 		E520A1E52C8C67BA00CEA1A9 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E520A1E42C8C67BA00CEA1A9 /* Preview Assets.xcassets */; };
 		E520A1ED2C8C68FF00CEA1A9 /* ExamplePackage in Frameworks */ = {isa = PBXBuildFile; productRef = E520A1EC2C8C68FF00CEA1A9 /* ExamplePackage */; };
+		E57F5DD02C8C922200B9088C /* create_metal_buffer.c in Sources */ = {isa = PBXBuildFile; fileRef = E57F5DCF2C8C922200B9088C /* create_metal_buffer.c */; };
+		E57F5DD32C8C9AC400B9088C /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E57F5DD22C8C9AC400B9088C /* Metal.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,6 +22,10 @@
 		E520A1DF2C8C67B800CEA1A9 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E520A1E12C8C67BA00CEA1A9 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E520A1E42C8C67BA00CEA1A9 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		E57F5DCD2C8C922100B9088C /* SwiftRustUeffiExample-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SwiftRustUeffiExample-Bridging-Header.h"; sourceTree = "<group>"; };
+		E57F5DCE2C8C922200B9088C /* create_metal_buffer.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = create_metal_buffer.h; sourceTree = "<group>"; };
+		E57F5DCF2C8C922200B9088C /* create_metal_buffer.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = create_metal_buffer.c; sourceTree = "<group>"; };
+		E57F5DD22C8C9AC400B9088C /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -27,6 +33,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E57F5DD32C8C9AC400B9088C /* Metal.framework in Frameworks */,
 				E520A1ED2C8C68FF00CEA1A9 /* ExamplePackage in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -39,6 +46,7 @@
 			children = (
 				E520A1DC2C8C67B800CEA1A9 /* SwiftRustUeffiExample */,
 				E520A1DB2C8C67B800CEA1A9 /* Products */,
+				E57F5DD12C8C9AC300B9088C /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -57,6 +65,9 @@
 				E520A1DF2C8C67B800CEA1A9 /* ContentView.swift */,
 				E520A1E12C8C67BA00CEA1A9 /* Assets.xcassets */,
 				E520A1E32C8C67BA00CEA1A9 /* Preview Content */,
+				E57F5DCE2C8C922200B9088C /* create_metal_buffer.h */,
+				E57F5DCF2C8C922200B9088C /* create_metal_buffer.c */,
+				E57F5DCD2C8C922100B9088C /* SwiftRustUeffiExample-Bridging-Header.h */,
 			);
 			path = SwiftRustUeffiExample;
 			sourceTree = "<group>";
@@ -67,6 +78,14 @@
 				E520A1E42C8C67BA00CEA1A9 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		E57F5DD12C8C9AC300B9088C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E57F5DD22C8C9AC400B9088C /* Metal.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -104,6 +123,7 @@
 				TargetAttributes = {
 					E520A1D92C8C67B800CEA1A9 = {
 						CreatedOnToolsVersion = 15.2;
+						LastSwiftMigration = 1520;
 					};
 				};
 			};
@@ -146,6 +166,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E520A1E02C8C67B800CEA1A9 /* ContentView.swift in Sources */,
+				E57F5DD02C8C922200B9088C /* create_metal_buffer.c in Sources */,
 				E520A1DE2C8C67B800CEA1A9 /* SwiftRustUeffiExampleApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -277,6 +298,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"SwiftRustUeffiExample/Preview Content\"";
@@ -300,6 +322,8 @@
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "SwiftRustUeffiExample/SwiftRustUeffiExample-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -310,6 +334,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"SwiftRustUeffiExample/Preview Content\"";
@@ -333,6 +358,7 @@
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "SwiftRustUeffiExample/SwiftRustUeffiExample-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
