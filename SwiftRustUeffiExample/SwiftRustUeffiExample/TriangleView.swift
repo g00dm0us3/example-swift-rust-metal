@@ -270,7 +270,6 @@ extension TriangleView {
             library: MTLLibrary,
             pixelFormat: MTLPixelFormat
         ) {
-            print(UIScreen.main.scale)
             let pipelineStateDescriptor = MTLRenderPipelineDescriptor()
 
             pipelineStateDescriptor.vertexFunction = library.makeFunction(name: "vertex_function")
