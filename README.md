@@ -1,7 +1,7 @@
 # example-swift-rust-metal
 A small example of turning your Rust library into Swift package.
 
-![triangle drawing][tree_drawing.gif]
+![triangle drawing](./tree_drawing.gif)
 
 ## What? Why?
 So, I had this idea, that low-level, CPU intensive stuff works much better in C, than in Swift. Especially when it comes to playing with pointers.
