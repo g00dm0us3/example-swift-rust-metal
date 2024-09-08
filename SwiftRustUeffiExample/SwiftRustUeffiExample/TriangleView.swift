@@ -36,6 +36,8 @@ struct TriangleView: UIViewRepresentable {
         mtkView.backgroundColor = context.environment.colorScheme == .dark ? UIColor.black : UIColor.white
         mtkView.isOpaque = true
         //mtkView.enableSetNeedsDisplay = true
+
+        delegate.renderer.initRenderingPipeline(with: mtkView.colorPixelFormat)
         return mtkView
     }
 
@@ -48,7 +50,7 @@ struct TriangleView: UIViewRepresentable {
 // MARK: - MetalViewDelegate
 extension TriangleView {
     final class MetalViewDelegate: NSObject, MTKViewDelegate {
-        private let renderer: Renderer
+        let renderer: Renderer
 
         init(
             renderer: Renderer
@@ -64,9 +66,8 @@ extension TriangleView {
         }
 
         func draw(in view: MTKView) {
-            guard let drawable = view.currentDrawable else { return }
             renderer.render(
-                with: drawable
+                in: view
             )
         }
     }
@@ -77,13 +78,19 @@ extension TriangleView {
     final class Renderer {
         private let device: MTLDevice
 
+        private lazy var defaultLibrary = device.makeDefaultLibrary()!
+
+        private lazy var model = QuadModel(
+            device: device
+        )
+
         private var didSetNonzeroSize = false
         var drawableSize: CGSize = .zero {
             didSet {
                 if drawableSize != .zero && !didSetNonzeroSize {
                     didSetNonzeroSize = true
                     sierpinskiTriangleDrawer = .init(
-                        iterationsPerStep: 10000,
+                        iterationsPerStep: 1000,
                         iterationLimit: 5 * drawableSize.minArea
                     )
 
@@ -92,14 +99,6 @@ extension TriangleView {
                 }
             }
         }
-
-        private lazy var commandQueue: MTLCommandQueue =  {
-            guard let commandQueue = device.makeCommandQueue() else {
-                fatalError("Cannot create command queue!")
-            }
-
-            return commandQueue
-        }()
 
         private lazy var triangleSurface: IOSurfaceRef? = {
             precondition(didSetNonzeroSize, "Drawable size should be non-zero!")
@@ -112,6 +111,9 @@ extension TriangleView {
         }()
 
         private var sierpinskiTriangleDrawer: SierpinskyTriangleDrawer?
+        private var pipeline: RenderingPipeline?
+
+        private lazy var texture = makeTexture()!
 
         init(
             device: MTLDevice
@@ -119,9 +121,23 @@ extension TriangleView {
             self.device = device
         }
 
-        func render(
-            with drawable: CAMetalDrawable
+        func initRenderingPipeline(
+            with pixelFormat: MTLPixelFormat
         ) {
+            guard pipeline == nil else { return }
+            pipeline = .init(
+                device: device,
+                library: defaultLibrary,
+                pixelFormat: pixelFormat
+            )
+        }
+
+        func render(
+            in view: MTKView
+        ) {
+            guard let currentRenderPassDescriptor = view.currentRenderPassDescriptor else { return }
+            guard let drawable = view.currentDrawable else { return }
+            guard let pipeline else { return }
             guard let sierpinskiTriangleDrawer else { return }
             guard let triangleSurface else { return }
 
@@ -136,23 +152,127 @@ extension TriangleView {
                     )
                 )
             )
-            let max = sierpinskiTriangleDrawer.updateDrawing(drawingData: baseAddress)
+
+            var max = sierpinskiTriangleDrawer.updateDrawing(drawingData: baseAddress)
 
             IOSurfaceUnlock(triangleSurface, .avoidSync, nil)
 
-            print("\(max)")
-//            let commandBuffer = makeCommandBuffer()
-//
-//            commandBuffer.commit()
-//            commandBuffer.present(drawable)
+            let commandBuffer = makeCommandBuffer()
+            
+            let renderEncoder = commandBuffer.makeRenderCommandEncoder(
+                descriptor: currentRenderPassDescriptor
+            )!
+
+            print(max)
+
+            renderEncoder.setRenderPipelineState(pipeline.pipelineState)
+
+            renderEncoder.setVertexBuffer(model.buffer, offset: 0, index: 0);
+            renderEncoder.setVertexBuffer(modelMatrixBuffer, offset: 0, index: 1)
+
+            memcpy(
+                maxValBuffer.contents(),
+                &max,
+                MemoryLayout<UInt32>.stride
+            )
+
+            renderEncoder.setFragmentBuffer(maxValBuffer, offset: 0, index: 0)
+            renderEncoder.setFragmentTexture(texture, index: 0)
+
+            renderEncoder.drawPrimitives(type: .triangle, vertexStart: 0, vertexCount: model.vertexCount)
+
+            renderEncoder.endEncoding()
+            commandBuffer.present(drawable)
+
+            commandBuffer.commit()
         }
 
+        // MARK: - Shader Argument Management
+        private func allocateBuffer(
+            size: Int
+        ) -> MTLBuffer? {
+            device.makeBuffer(
+                length: size,
+                options: .storageModeShared
+            )
+        }
+
+        private lazy var maxValBuffer = {
+            allocateBuffer(size: MemoryLayout<UInt32>.stride)!
+        }()
+
+        private lazy var modelMatrixBuffer = {
+            var modelMatrix = self.modelMatrix
+
+            let size = MemoryLayout<simd_float4x4>.stride
+            let buffer = self.allocateBuffer(size: size)
+
+            memcpy(
+                buffer?.contents(),
+                &modelMatrix, size
+            )
+
+            return buffer
+        }()
+
+        private lazy var modelMatrix = makeModelMatrix()
+        private func makeModelMatrix() -> simd_float4x4 {
+            let aspect = Float(drawableSize.width / drawableSize.height)
+
+            return simd_float4x4(rows:[
+                SIMD4<Float>(1, 0,     0, 0),
+                SIMD4<Float>(0,     aspect, 0, 0),
+                SIMD4<Float>(0,     0,     1, 0),
+                SIMD4<Float>(0,     0,     0, 1)
+            ])
+        }
+
+        // MARK: - Factories
         private func makeCommandBuffer() -> MTLCommandBuffer {
-            guard let commandBuffer = commandQueue.makeCommandBuffer() else {
+            guard let commandBuffer = pipeline?.commandQueue.makeCommandBuffer() else {
                 fatalError("CAnnot create command buffer!")
             }
 
             return commandBuffer
+        }
+
+        private func makeTexture() -> MTLTexture? {
+            guard let triangleSurface else {
+                return nil
+            }
+
+            let descriptor = MTLTextureDescriptor()
+
+            descriptor.usage = .shaderRead
+            descriptor.pixelFormat = .r32Uint
+            descriptor.width = Int(drawableSize.minWidth)
+            descriptor.height = Int(drawableSize.minHeight)
+
+            return device.makeTexture(
+                descriptor: descriptor,
+                iosurface: triangleSurface,
+                plane: 0
+            )
+        }
+    }
+
+    struct RenderingPipeline {
+        let pipelineState: MTLRenderPipelineState
+        let commandQueue: MTLCommandQueue
+
+        init(
+            device: MTLDevice,
+            library: MTLLibrary,
+            pixelFormat: MTLPixelFormat
+        ) {
+            let pipelineStateDescriptor = MTLRenderPipelineDescriptor()
+
+            pipelineStateDescriptor.vertexFunction = library.makeFunction(name: "vertex_function")
+            pipelineStateDescriptor.fragmentFunction = library.makeFunction(name: "fragment_function")
+            pipelineStateDescriptor.colorAttachments[0].pixelFormat = pixelFormat
+
+            pipelineState = try! device.makeRenderPipelineState(descriptor: pipelineStateDescriptor)
+            commandQueue = device.makeCommandQueue()!
         }
     }
 }
