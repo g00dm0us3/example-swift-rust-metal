@@ -384,6 +384,32 @@ fileprivate class UniffiHandleMap<T> {
 // Public interface members begin here.
 
 
+fileprivate struct FfiConverterUInt16: FfiConverterPrimitive {
+    typealias FfiType = UInt16
+    typealias SwiftType = UInt16
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt16 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+fileprivate struct FfiConverterUInt32: FfiConverterPrimitive {
+    typealias FfiType = UInt32
+    typealias SwiftType = UInt32
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> UInt32 {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
 fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
     typealias FfiType = UInt64
     typealias SwiftType = UInt64
@@ -393,6 +419,27 @@ fileprivate struct FfiConverterUInt64: FfiConverterPrimitive {
     }
 
     public static func write(_ value: SwiftType, into buf: inout [UInt8]) {
+        writeInt(&buf, lower(value))
+    }
+}
+
+fileprivate struct FfiConverterBool : FfiConverter {
+    typealias FfiType = Int8
+    typealias SwiftType = Bool
+
+    public static func lift(_ value: Int8) throws -> Bool {
+        return value != 0
+    }
+
+    public static func lower(_ value: Bool) -> Int8 {
+        return value ? 1 : 0
+    }
+
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Bool {
+        return try lift(readInt(&buf))
+    }
+
+    public static func write(_ value: Bool, into buf: inout [UInt8]) {
         writeInt(&buf, lower(value))
     }
 }
@@ -438,14 +485,22 @@ fileprivate struct FfiConverterString: FfiConverter {
 
 
 
-public protocol GreeterProtocol : AnyObject {
+public protocol SierpinskyTriangleDrawerProtocol : AnyObject {
     
-    func greet()  -> String
+    func isDone()  -> Bool
+    
+    func setHeight(height: UInt16) 
+    
+    func setNumberOfIterations(iterationLimit: UInt32) 
+    
+    func setWidth(width: UInt16) 
+    
+    func updateDrawing(drawingData: Handle)  -> UInt32
     
 }
 
-open class Greeter:
-    GreeterProtocol {
+open class SierpinskyTriangleDrawer:
+    SierpinskyTriangleDrawerProtocol {
     fileprivate let pointer: UnsafeMutableRawPointer!
 
     /// Used to instantiate a [FFIObject] without an actual pointer, for fakes in tests, mostly.
@@ -470,13 +525,14 @@ open class Greeter:
     }
 
     public func uniffiClonePointer() -> UnsafeMutableRawPointer {
-        return try! rustCall { uniffi_example_fn_clone_greeter(self.pointer, $0) }
+        return try! rustCall { uniffi_example_fn_clone_sierpinskytriangledrawer(self.pointer, $0) }
     }
-public convenience init(name: String) {
+public convenience init(iterationsPerStep: UInt32, iterationLimit: UInt32) {
     let pointer =
         try! rustCall() {
-    uniffi_example_fn_constructor_greeter_new(
-        FfiConverterString.lower(name),$0
+    uniffi_example_fn_constructor_sierpinskytriangledrawer_new(
+        FfiConverterUInt32.lower(iterationsPerStep),
+        FfiConverterUInt32.lower(iterationLimit),$0
     )
 }
     self.init(unsafeFromRawPointer: pointer)
@@ -487,15 +543,44 @@ public convenience init(name: String) {
             return
         }
 
-        try! rustCall { uniffi_example_fn_free_greeter(pointer, $0) }
+        try! rustCall { uniffi_example_fn_free_sierpinskytriangledrawer(pointer, $0) }
     }
 
     
 
     
-open func greet() -> String {
-    return try!  FfiConverterString.lift(try! rustCall() {
-    uniffi_example_fn_method_greeter_greet(self.uniffiClonePointer(),$0
+open func isDone() -> Bool {
+    return try!  FfiConverterBool.lift(try! rustCall() {
+    uniffi_example_fn_method_sierpinskytriangledrawer_is_done(self.uniffiClonePointer(),$0
+    )
+})
+}
+    
+open func setHeight(height: UInt16) {try! rustCall() {
+    uniffi_example_fn_method_sierpinskytriangledrawer_set_height(self.uniffiClonePointer(),
+        FfiConverterUInt16.lower(height),$0
+    )
+}
+}
+    
+open func setNumberOfIterations(iterationLimit: UInt32) {try! rustCall() {
+    uniffi_example_fn_method_sierpinskytriangledrawer_set_number_of_iterations(self.uniffiClonePointer(),
+        FfiConverterUInt32.lower(iterationLimit),$0
+    )
+}
+}
+    
+open func setWidth(width: UInt16) {try! rustCall() {
+    uniffi_example_fn_method_sierpinskytriangledrawer_set_width(self.uniffiClonePointer(),
+        FfiConverterUInt16.lower(width),$0
+    )
+}
+}
+    
+open func updateDrawing(drawingData: Handle) -> UInt32 {
+    return try!  FfiConverterUInt32.lift(try! rustCall() {
+    uniffi_example_fn_method_sierpinskytriangledrawer_update_drawing(self.uniffiClonePointer(),
+        FfiConverterTypeHandle.lower(drawingData),$0
     )
 })
 }
@@ -503,20 +588,20 @@ open func greet() -> String {
 
 }
 
-public struct FfiConverterTypeGreeter: FfiConverter {
+public struct FfiConverterTypeSierpinskyTriangleDrawer: FfiConverter {
 
     typealias FfiType = UnsafeMutableRawPointer
-    typealias SwiftType = Greeter
+    typealias SwiftType = SierpinskyTriangleDrawer
 
-    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> Greeter {
-        return Greeter(unsafeFromRawPointer: pointer)
+    public static func lift(_ pointer: UnsafeMutableRawPointer) throws -> SierpinskyTriangleDrawer {
+        return SierpinskyTriangleDrawer(unsafeFromRawPointer: pointer)
     }
 
-    public static func lower(_ value: Greeter) -> UnsafeMutableRawPointer {
+    public static func lower(_ value: SierpinskyTriangleDrawer) -> UnsafeMutableRawPointer {
         return value.uniffiClonePointer()
     }
 
-    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Greeter {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> SierpinskyTriangleDrawer {
         let v: UInt64 = try readInt(&buf)
         // The Rust code won't compile if a pointer won't fit in a UInt64.
         // We have to go via `UInt` because that's the thing that's the size of a pointer.
@@ -527,7 +612,7 @@ public struct FfiConverterTypeGreeter: FfiConverter {
         return try lift(ptr!)
     }
 
-    public static func write(_ value: Greeter, into buf: inout [UInt8]) {
+    public static func write(_ value: SierpinskyTriangleDrawer, into buf: inout [UInt8]) {
         // This fiddling is because `Int` is the thing that's the same size as a pointer.
         // The Rust code won't compile if a pointer won't fit in a `UInt64`.
         writeInt(&buf, UInt64(bitPattern: Int64(Int(bitPattern: lower(value)))))
@@ -537,22 +622,47 @@ public struct FfiConverterTypeGreeter: FfiConverter {
 
 
 
-public func FfiConverterTypeGreeter_lift(_ pointer: UnsafeMutableRawPointer) throws -> Greeter {
-    return try FfiConverterTypeGreeter.lift(pointer)
+public func FfiConverterTypeSierpinskyTriangleDrawer_lift(_ pointer: UnsafeMutableRawPointer) throws -> SierpinskyTriangleDrawer {
+    return try FfiConverterTypeSierpinskyTriangleDrawer.lift(pointer)
 }
 
-public func FfiConverterTypeGreeter_lower(_ value: Greeter) -> UnsafeMutableRawPointer {
-    return FfiConverterTypeGreeter.lower(value)
+public func FfiConverterTypeSierpinskyTriangleDrawer_lower(_ value: SierpinskyTriangleDrawer) -> UnsafeMutableRawPointer {
+    return FfiConverterTypeSierpinskyTriangleDrawer.lower(value)
 }
-public func allocTexture(width: UInt64, height: UInt64, pageSize: UInt64) -> UInt64 {
-    return try!  FfiConverterUInt64.lift(try! rustCall() {
-    uniffi_example_fn_func_alloc_texture(
-        FfiConverterUInt64.lower(width),
-        FfiConverterUInt64.lower(height),
-        FfiConverterUInt64.lower(pageSize),$0
-    )
-})
+
+
+/**
+ * Typealias from the type name used in the UDL file to the builtin type.  This
+ * is needed because the UDL type name is used in function/method signatures.
+ */
+public typealias Handle = UInt64
+public struct FfiConverterTypeHandle: FfiConverter {
+    public static func read(from buf: inout (data: Data, offset: Data.Index)) throws -> Handle {
+        return try FfiConverterUInt64.read(from: &buf)
+    }
+
+    public static func write(_ value: Handle, into buf: inout [UInt8]) {
+        return FfiConverterUInt64.write(value, into: &buf)
+    }
+
+    public static func lift(_ value: UInt64) throws -> Handle {
+        return try FfiConverterUInt64.lift(value)
+    }
+
+    public static func lower(_ value: Handle) -> UInt64 {
+        return FfiConverterUInt64.lower(value)
+    }
 }
+
+
+public func FfiConverterTypeHandle_lift(_ value: UInt64) throws -> Handle {
+    return try FfiConverterTypeHandle.lift(value)
+}
+
+public func FfiConverterTypeHandle_lower(_ value: Handle) -> UInt64 {
+    return FfiConverterTypeHandle.lower(value)
+}
+
 
 private enum InitializationResult {
     case ok
@@ -569,13 +679,22 @@ private var initializationResult: InitializationResult = {
     if bindings_contract_version != scaffolding_contract_version {
         return InitializationResult.contractVersionMismatch
     }
-    if (uniffi_example_checksum_func_alloc_texture() != 25643) {
+    if (uniffi_example_checksum_method_sierpinskytriangledrawer_is_done() != 45747) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_example_checksum_method_greeter_greet() != 52555) {
+    if (uniffi_example_checksum_method_sierpinskytriangledrawer_set_height() != 49451) {
         return InitializationResult.apiChecksumMismatch
     }
-    if (uniffi_example_checksum_constructor_greeter_new() != 6465) {
+    if (uniffi_example_checksum_method_sierpinskytriangledrawer_set_number_of_iterations() != 51769) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_example_checksum_method_sierpinskytriangledrawer_set_width() != 5455) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_example_checksum_method_sierpinskytriangledrawer_update_drawing() != 61544) {
+        return InitializationResult.apiChecksumMismatch
+    }
+    if (uniffi_example_checksum_constructor_sierpinskytriangledrawer_new() != 59576) {
         return InitializationResult.apiChecksumMismatch
     }
 

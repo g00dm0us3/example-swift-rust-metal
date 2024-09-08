@@ -1,10 +1,20 @@
 
-namespace example { 
-	u64 alloc_texture(u64 width, u64 height, u64 page_size);
-};
+namespace example {};
 
-// You can safely delete this example interface definition
-interface Greeter {
-	constructor(string name);
-	string greet();
+[Custom]
+typedef u64 Handle;
+
+interface SierpinskyTriangleDrawer {
+	constructor(
+		u32 iterations_per_step,
+        u32 iteration_limit
+	);
+
+	void set_width(u16 width);
+	void set_height(u16 height);
+
+	boolean is_done();
+	void set_number_of_iterations(u32 iteration_limit);
+
+	u32 update_drawing(Handle drawing_data);
 };

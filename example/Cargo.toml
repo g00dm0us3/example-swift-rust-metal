@@ -11,6 +11,7 @@ name = "example"
 
 [dependencies]
 uniffi = "0.28"
+vecmath = "1.0.0"
 
 
 [build-dependencies]
