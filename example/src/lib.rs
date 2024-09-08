@@ -20,7 +20,7 @@ struct DrawerState {
     linear_transforms: [Matrix2x3<f32>; 3],
     curr_point: Vector2<f32>,
     lsfr: LSFR64,
-    curr_max_count: u32,
+    curr_max_count: u32
 }
 
 impl DrawerState {
@@ -48,7 +48,6 @@ impl DrawerState {
 struct SierpinskyTriangleDrawer {
     state: RwLock<DrawerState>,
 }
-
 impl SierpinskyTriangleDrawer {
     fn new(iterations_per_step: u32, iteration_limit: u32) -> Self {
         Self {
@@ -113,7 +112,7 @@ impl SierpinskyTriangleDrawer {
                 let new_value = curr_value.wrapping_add(1);
                 advanced.write(new_value);
 
-                max_count = max(new_value, max_count);
+                max_count = max(max_count, new_value);
             }
 
             curr_number_of_iterations += 1;
@@ -131,6 +130,8 @@ impl SierpinskyTriangleDrawer {
 #[cfg(test)]
 mod tests {
     use std::alloc::{alloc, dealloc, Layout};
+    use image::{Rgba, RgbaImage};
+
     use crate::Handle;
 
     use super::SierpinskyTriangleDrawer;
@@ -155,12 +156,15 @@ mod tests {
 
     #[test]
     fn test_runs_chaos_game() {
-        let triangle_drawer = SierpinskyTriangleDrawer::new(500, 256 * 512 * 2);
+        let width: u32 = 1024;
+        let height: u32 = 2048;
 
-        triangle_drawer.set_height(512);
-        triangle_drawer.set_width(256);
+        let triangle_drawer = SierpinskyTriangleDrawer::new(500, (width * height * 2) as u32);
 
-        let layout = Layout::new::<[u32; 512 * 256]>();
+        triangle_drawer.set_height(height as u16);
+        triangle_drawer.set_width(width as u16);
+
+        let layout = Layout::new::<[f32; 1024 * 2048]>();
 
         let handle: u64;
 
@@ -174,20 +178,58 @@ mod tests {
 
         let mut non_zero = 0;
 
-        for idx in 0..(256 * 512) {
+        for idx in 0..(width * height) {
             unsafe {
-                let val = *((handle as *mut u32).add(idx));
+                let val = *((handle as *mut u32).add(idx as usize));
 
-                non_zero += (val > 0) as u16;
+                non_zero += (val > 0) as u32;
             }
         }
 
-        let area = non_zero as f32 / (512.0 * 256.0);
+        let area = non_zero as f32 / (width as f32 * height as f32);
 
         assert!(area < 0.15);
+
+        // Uncomment to debug.
+        // let image = make_image(handle as *mut u32, width, height);
+
+        // image.save(&format!("/Users/homer/Desktop/rust_test.png")).unwrap();
 
         unsafe {
             dealloc(handle as *mut u8, layout);
         }
+    }
+
+    fn make_image(
+        pointer: *mut u32,
+        width: u32,
+        height: u32
+    ) -> RgbaImage {
+        let mut img = RgbaImage::new(width as u32, height as u32);
+
+        unsafe {
+            for x in 0..width {
+                for y in 0..height {
+                    let idx = y * width + x;
+                    let val = *(pointer.add(idx as usize));
+
+                    if val > 0 {
+                        img.put_pixel(
+                            (width - 1 - x) as u32,
+                            (height - 1 - y) as u32,
+                            Rgba::from([255,255,255,255])
+                        );
+                    } else {
+                        img.put_pixel(
+                            (width - 1 - x) as u32,
+                            (height - 1 - y) as u32,
+                            Rgba::from([0; 4])
+                        );
+                    }
+                }
+            }
+        }
+
+        return img;
     }
 }

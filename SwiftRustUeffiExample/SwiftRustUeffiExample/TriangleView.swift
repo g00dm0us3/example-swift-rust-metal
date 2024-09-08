@@ -74,6 +74,7 @@ extension TriangleView {
 }
 
 // MARK: - Renderer
+// - TODO: refactor.
 extension TriangleView {
     final class Renderer {
         private let device: MTLDevice
@@ -90,11 +91,11 @@ extension TriangleView {
                 if drawableSize != .zero && !didSetNonzeroSize {
                     didSetNonzeroSize = true
                     sierpinskiTriangleDrawer = .init(
-                        iterationsPerStep: 1000,
-                        iterationLimit: 5 * drawableSize.minArea
+                        iterationsPerStep: 6000,
+                        iterationLimit: 5 * UInt32(drawableSize.minWidth) * UInt32(drawableSize.minWidth)
                     )
 
-                    sierpinskiTriangleDrawer?.setHeight(height: drawableSize.minHeight)
+                    sierpinskiTriangleDrawer?.setHeight(height: 4 * drawableSize.minWidth)
                     sierpinskiTriangleDrawer?.setWidth(width: drawableSize.minWidth)
                 }
             }
@@ -104,9 +105,15 @@ extension TriangleView {
             precondition(didSetNonzeroSize, "Drawable size should be non-zero!")
 
             return IOSurfaceCreate([
-                kIOSurfaceWidth: UInt16(drawableSize.width),
-                kIOSurfaceHeight: UInt16(drawableSize.height),
-                kIOSurfaceBytesPerElement: 4
+                kIOSurfaceWidth: UInt16(drawableSize.minWidth),
+                kIOSurfaceHeight: UInt16(4 * drawableSize.minWidth),
+                kIOSurfaceBytesPerElement: 4,
+                // This has to be multiple of 16. Hence, multiplying it by 4,
+                // Meaning that width has to be 4 time it's initial value.
+                // Have to adjust height in the same way.
+
+                // - TODO: there must be a better way of doing this.
+                kIOSurfaceBytesPerRow: 4 * 4 * UInt16(drawableSize.minWidth)
             ] as CFDictionary)
         }()
 
@@ -138,13 +145,13 @@ extension TriangleView {
             guard let currentRenderPassDescriptor = view.currentRenderPassDescriptor else { return }
             guard let drawable = view.currentDrawable else { return }
             guard let pipeline else { return }
+
             guard let sierpinskiTriangleDrawer else { return }
             guard let triangleSurface else { return }
 
             guard !sierpinskiTriangleDrawer.isDone() else { return }
 
             IOSurfaceLock(triangleSurface, .avoidSync, nil)
-
             let baseAddress = UInt64(
                 bitPattern: Int64(
                     Int(
@@ -162,8 +169,6 @@ extension TriangleView {
             let renderEncoder = commandBuffer.makeRenderCommandEncoder(
                 descriptor: currentRenderPassDescriptor
             )!
-
-            print(max)
 
             renderEncoder.setRenderPipelineState(pipeline.pipelineState)
 
@@ -230,7 +235,7 @@ extension TriangleView {
         // MARK: - Factories
         private func makeCommandBuffer() -> MTLCommandBuffer {
             guard let commandBuffer = pipeline?.commandQueue.makeCommandBuffer() else {
-                fatalError("CAnnot create command buffer!")
+                fatalError("aAnnot create command buffer!")
             }
 
             return commandBuffer
@@ -244,9 +249,9 @@ extension TriangleView {
             let descriptor = MTLTextureDescriptor()
 
             descriptor.usage = .shaderRead
-            descriptor.pixelFormat = .r32Uint
+            descriptor.pixelFormat = .rgba8Uint
             descriptor.width = Int(drawableSize.minWidth)
-            descriptor.height = Int(drawableSize.minHeight)
+            descriptor.height = Int(drawableSize.minWidth)
 
             return device.makeTexture(
                 descriptor: descriptor,
@@ -265,6 +270,7 @@ extension TriangleView {
             library: MTLLibrary,
             pixelFormat: MTLPixelFormat
         ) {
+            print(UIScreen.main.scale)
             let pipelineStateDescriptor = MTLRenderPipelineDescriptor()
 
             pipelineStateDescriptor.vertexFunction = library.makeFunction(name: "vertex_function")
